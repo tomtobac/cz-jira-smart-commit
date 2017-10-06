@@ -1,11 +1,14 @@
-var inquirer = require('inquirer')
+const inquirer = require('inquirer');
+const branch = require('git-branch');
+const choices = require('./choices');
 
 // This can be any kind of SystemJS compatible module.
 // We use Commonjs here, but ES6 or AMD would do just
 // fine.
 module.exports = {
-  prompter: prompter,
-  formatCommit: formatCommit
+  prompter,
+  formatCommit,
+  formattBranch
 };
 
 // When a user runs `git cz`, prompter will
@@ -31,11 +34,30 @@ function prompter(cz, commit) {
   inquirer.prompt([
     {
       type: 'input',
-      name: 'issues',
+      name: 'issue',
       message: 'Jira Issue ID(s) (required):\n',
+      default: formattBranch(branch.sync()),
       validate: function(input) {
         if (!input) {
           return 'Must specify issue IDs, otherwise, just use a normal commit message';
+        } else {
+          return true;
+        }
+      }
+    },
+    {
+      type: 'list',
+      name: 'type',
+      message: 'Select the type of change that you\'re committing:',
+      choices: choices
+    },
+    {
+      type: 'input',
+      name: 'scope',
+      message: 'Denote the scope of this change ($location, $browser, $compile, etc.):\n',
+      validate: function(input) {
+        if (!input) {
+          return 'empty scope';
         } else {
           return true;
         }
@@ -52,29 +74,7 @@ function prompter(cz, commit) {
           return true;
         }
       }
-    },
-    {
-      type: 'input',
-      name: 'workflow',
-      message: 'Workflow command (testing, closed, etc.) (optional):\n',
-      validate: function(input) {
-        if (input && input.indexOf(' ') !== -1) {
-          return 'Workflows cannot have spaces in smart commits. If your workflow name has a space, use a dash (-)';
-        } else {
-          return true;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'time',
-      message: 'Time spent (i.e. 3h 15m) (optional):\n'
-    },
-    {
-      type: 'input',
-      name: 'comment',
-      message: 'Jira comment (optional):\n'
-    },
+    }
   ]).then((answers) => {
     formatCommit(commit, answers);
   });
@@ -82,11 +82,9 @@ function prompter(cz, commit) {
 
 function formatCommit(commit, answers) {
   commit(filter([
-    `[${answers.issues}] `,
+    `[${answers.issue}]`,
+    `${answers.type}(${answers.scope}):`,
     answers.message,
-    answers.workflow ? '#' + answers.workflow : undefined,
-    answers.time ? '#time ' + answers.time : undefined,
-    answers.comment ? '#comment ' + answers.comment : undefined,
   ]).join(' '));
 }
 
@@ -94,4 +92,12 @@ function filter(array) {
   return array.filter(function(item) {
     return !!item;
   });
+}
+
+function formattBranch(branch) {
+  if (branch == undefined || branch == null) {
+    return;
+  }
+  const keys = branch.split('-'); // bugfix/ABC-1192-my-new-branch
+  return keys.length >= 1 ? `${keys[0].split('/').pop()}-${keys[1]}` : undefined ; // ABC-1199
 }
