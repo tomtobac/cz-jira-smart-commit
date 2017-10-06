@@ -31,11 +31,11 @@ function prompter(cz, commit) {
   inquirer.prompt([
     {
       type: 'input',
-      name: 'message',
-      message: 'GitHub commit message (required):\n',
+      name: 'issues',
+      message: 'Jira Issue ID(s) (required):\n',
       validate: function(input) {
         if (!input) {
-          return 'empty commit message';
+          return 'Must specify issue IDs, otherwise, just use a normal commit message';
         } else {
           return true;
         }
@@ -43,11 +43,11 @@ function prompter(cz, commit) {
     },
     {
       type: 'input',
-      name: 'issues',
-      message: 'Jira Issue ID(s) (required):\n',
+      name: 'message',
+      message: 'Commit message (required):\n',
       validate: function(input) {
         if (!input) {
-          return 'Must specify issue IDs, otherwise, just use a normal commit message';
+          return 'empty commit message';
         } else {
           return true;
         }
@@ -82,8 +82,8 @@ function prompter(cz, commit) {
 
 function formatCommit(commit, answers) {
   commit(filter([
+    `[${answers.issues}] `,
     answers.message,
-    answers.issues,
     answers.workflow ? '#' + answers.workflow : undefined,
     answers.time ? '#time ' + answers.time : undefined,
     answers.comment ? '#comment ' + answers.comment : undefined,
